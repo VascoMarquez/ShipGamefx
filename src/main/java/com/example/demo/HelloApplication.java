@@ -1,9 +1,6 @@
 package com.example.demo;
 
-import javafx.animation.Animation;
-import javafx.animation.AnimationTimer;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import javafx.animation.*;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -18,6 +15,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -62,6 +60,11 @@ public class HelloApplication extends Application {
     boolean MoveDown = false;
     boolean MoveLeft = false;
     boolean MoveRight = false;
+    Rotate rotateB =  new Rotate();
+    Rotate rotateM =  new Rotate();
+    Rectangle enemy;
+
+    Rectangle hitbox = new Rectangle(10, 10 , Color.RED);
 
 
     @Override
@@ -72,19 +75,22 @@ public class HelloApplication extends Application {
         anchorPaneMain = new AnchorPane();
 
         anchorPaneMain.setPrefSize(5000, 5000);
-        Rectangle enemy = new Rectangle(OBJECT_WIDTH, OBJECT_HEIGHT, Color.BLUE);
-        anchorPaneMain.getChildren().addAll(playerOne, enemy);
+        enemy = new Rectangle(OBJECT_WIDTH, OBJECT_HEIGHT, Color.BLUE);
+        anchorPaneMain.getChildren().addAll(playerOne, enemy, hitbox);
         AnchorPane.setTopAnchor(playerOne, 275.0);
         AnchorPane.setLeftAnchor(playerOne, 375.0);
         AnchorPane.setTopAnchor(enemy, 275.0);
         AnchorPane.setLeftAnchor(enemy, 375.0);
+        AnchorPane.setTopAnchor(hitbox, 275.0);
+        AnchorPane.setLeftAnchor(hitbox, 375.0);
+        hitbox.setTranslateX(1000);
         MarkMovement.getPoints().addAll(20.0, 15.0,
                 0.0, 10.0,
                 0.0, 20.0);
         MarkMovement.setFill(Color.TRANSPARENT);
         anchorPaneMain.getChildren().add(MarkMovement);
 
-        enemy.setTranslateX(playerOne.getTranslateX() + 5000);
+        enemy.setTranslateX(playerOne.getTranslateX() + 400);
         enemy.setTranslateY(playerOne.getTranslateY());
 
         Image backgroundImage = new Image(getClass().getResource("/worldMapImage.jpg").toExternalForm());
@@ -107,10 +113,12 @@ public class HelloApplication extends Application {
         // Create the scene
         Group root = new Group();
         root.getChildren().addAll(anchorPaneMain);
-        scene = new Scene(root, WIDTH, HEIGHT, true);
+        scene = new Scene(root, 5000, 5000, true);
         scene.setCamera(camera);
 
         primaryStage.setScene(scene);
+        primaryStage.setWidth(800);
+        primaryStage.setHeight(480);
         primaryStage.show();
         playerOne.requestFocus(); // Make the object receive key events
         initialize();
@@ -123,11 +131,16 @@ public class HelloApplication extends Application {
            MoveInArrows();
             camera.setTranslateX(playerOne.getTranslateX());
             camera.setTranslateY(playerOne.getTranslateY());
+            if(playerOne.intersects(enemy.sceneToLocal(enemy.getBoundsInLocal()))){
+                System.out.println("Here");
+            }
         }
     }));
 
     public void initialize()
     {
+        MarkMovement.getTransforms().add(rotateM);
+        playerOne.getTransforms().add(rotateB);
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.setRate(1); //1 is normal speed. 2 is double, etc. -1 is reverse.
         timeline.play();
@@ -137,13 +150,13 @@ public class HelloApplication extends Application {
 
         PastMBx = XPosM;
         PastMBy = YPosM;
-        scene.setOnMouseMoved(new EventHandler<MouseEvent>() {
+        anchorPaneMain.setOnMouseMoved(new EventHandler<MouseEvent>() {
             public void handle(MouseEvent me){
                 MarkMovement.setFill(Color.RED);
                 MBx = playerOne.getTranslateX()+15+360;
                 MBy = playerOne.getTranslateY()+12.5+270;
-                XPosM = me.getX()-400;
-                YPosM = me.getY()-240;
+                XPosM = me.getX()-playerOne.getTranslateX()-400;
+                YPosM = me.getY()-playerOne.getTranslateY()-230;
                 int r = 75;
                 if (XPosM < 0){
                     if (YPosM > 0){
@@ -174,8 +187,8 @@ public class HelloApplication extends Application {
             @Override
             public void handle(MouseEvent me) {
                 MarkMovement.setFill(Color.RED);
-                XPosM = me.getX()-400;
-                YPosM = me.getY()-240;
+                XPosM = me.getX()-playerOne.getTranslateX()-400;
+                YPosM = me.getY()-playerOne.getTranslateY()-240;
                 if (XPosM < 0){
                     if (YPosM > 0){
                         //3Quadrant 180-theta
@@ -200,12 +213,12 @@ public class HelloApplication extends Application {
                 MarkMovement.rotateProperty().set(ThetaD);
             }
         });
-        scene.setOnMousePressed(new EventHandler<MouseEvent>() {
+        anchorPaneMain.setOnMousePressed(new EventHandler<MouseEvent>() {
             public void handle(MouseEvent me){
                 MouseIsJustClick = true;
             }
         });
-        scene.setOnMouseReleased(new EventHandler<MouseEvent>() {
+        anchorPaneMain.setOnMouseReleased(new EventHandler<MouseEvent>() {
             public void handle(MouseEvent me){
                 MouseIsJustClick = false;
             }
@@ -224,7 +237,6 @@ public class HelloApplication extends Application {
         playerOne.setTranslateY(playerOne.getTranslateY()+yVelocity);
         playerOne.setTranslateX(playerOne.getTranslateX()+xVelocity);
         playerOne.rotateProperty().set(ThetaD+90);
-
     }
 
     private void MoveInArrows(){
