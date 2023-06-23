@@ -1,11 +1,15 @@
 package com.example.demo;
 
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 
 public class PlayerBoat extends Polygon {
 
     private String playerName;
     private Double health;
+
+    private Circle bullet;
 
     public PlayerBoat(String name, Double p1x, Double p1y, Double p2x, Double p2y, Double p3x, Double p3y){
         this.playerName = name;

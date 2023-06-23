@@ -13,6 +13,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Rotate;
@@ -24,12 +25,8 @@ import java.io.IOException;
 
 public class HelloApplication extends Application {
 
-    private static final double WIDTH = 800;
-    private static final double HEIGHT = 480;
     private static final double OBJECT_WIDTH = 50;
     private static final double OBJECT_HEIGHT = 50;
-    private static final double CAMERA_INITIAL_X = -200;
-    private static final double CAMERA_INITIAL_Y = -200;
     private static final double CAMERA_INITIAL_Z = -100;
     private PerspectiveCamera camera;
 
@@ -49,22 +46,18 @@ public class HelloApplication extends Application {
     private Double theta;
     private int MouseTimer = 0;
     private double Opacacity = 100.0;
-    private double speed = 5;
+    private double speed = 0;
     private double xVelocity;
     private double yVelocity;
     private boolean MouseIsJustClick;
     private double ThetaD;
     private int r = 75;
     public Scene scene;
-    boolean MoveUp = false;
-    boolean MoveDown = false;
-    boolean MoveLeft = false;
-    boolean MoveRight = false;
-    Rotate rotateB =  new Rotate();
-    Rotate rotateM =  new Rotate();
     Rectangle enemy;
-
-    Rectangle hitbox = new Rectangle(10, 10 , Color.RED);
+    private boolean canShoot = true;
+    Circle bullet;
+    double xVelocityB;
+    double yVelocityB;
 
 
     @Override
@@ -76,20 +69,16 @@ public class HelloApplication extends Application {
 
         anchorPaneMain.setPrefSize(5000, 5000);
         enemy = new Rectangle(OBJECT_WIDTH, OBJECT_HEIGHT, Color.BLUE);
-        anchorPaneMain.getChildren().addAll(playerOne, enemy, hitbox);
+        anchorPaneMain.getChildren().addAll(playerOne, enemy);
         AnchorPane.setTopAnchor(playerOne, 275.0);
         AnchorPane.setLeftAnchor(playerOne, 375.0);
         AnchorPane.setTopAnchor(enemy, 275.0);
         AnchorPane.setLeftAnchor(enemy, 375.0);
-        AnchorPane.setTopAnchor(hitbox, 275.0);
-        AnchorPane.setLeftAnchor(hitbox, 375.0);
-        hitbox.setTranslateX(1000);
         MarkMovement.getPoints().addAll(20.0, 15.0,
                 0.0, 10.0,
                 0.0, 20.0);
         MarkMovement.setFill(Color.TRANSPARENT);
         anchorPaneMain.getChildren().add(MarkMovement);
-
         enemy.setTranslateX(playerOne.getTranslateX() + 400);
         enemy.setTranslateY(playerOne.getTranslateY());
 
@@ -128,10 +117,10 @@ public class HelloApplication extends Application {
         @Override
         public void handle(ActionEvent event) {
             RotateBoat();
-           MoveInArrows();
             camera.setTranslateX(playerOne.getTranslateX());
             camera.setTranslateY(playerOne.getTranslateY());
-            if(playerOne.intersects(enemy.sceneToLocal(enemy.getBoundsInLocal()))){
+            Shoot();
+            if(playerOne.getBoundsInParent().intersects(enemy.getBoundsInParent())){
                 System.out.println("Here");
             }
         }
@@ -139,8 +128,6 @@ public class HelloApplication extends Application {
 
     public void initialize()
     {
-        MarkMovement.getTransforms().add(rotateM);
-        playerOne.getTransforms().add(rotateB);
         timeline.setCycleCount(Animation.INDEFINITE);
         timeline.setRate(1); //1 is normal speed. 2 is double, etc. -1 is reverse.
         timeline.play();
@@ -221,6 +208,7 @@ public class HelloApplication extends Application {
         anchorPaneMain.setOnMouseReleased(new EventHandler<MouseEvent>() {
             public void handle(MouseEvent me){
                 MouseIsJustClick = false;
+                speed = 0;
             }
         });
         if (MouseIsJustClick){moveBoat();}
@@ -232,66 +220,61 @@ public class HelloApplication extends Application {
         MarkMovement.setTranslateX(MBx + r*Math.cos(theta));
         MarkMovement.setTranslateY(MBy + r*Math.sin(theta));
         MarkMovement.rotateProperty().set(ThetaD);
+        if (speed < 5){speed = speed+0.0625;}
+        else if(speed>5){speed = 5;}
         xVelocity = speed * Math.cos(theta);
         yVelocity = speed * Math.sin(theta);
         playerOne.setTranslateY(playerOne.getTranslateY()+yVelocity);
         playerOne.setTranslateX(playerOne.getTranslateX()+xVelocity);
         playerOne.rotateProperty().set(ThetaD+90);
+        CheckBoundries();
     }
 
-    private void MoveInArrows(){
+    private void CheckBoundries(){
+        if (playerOne.getTranslateX()<-400){
+            playerOne.setTranslateX(playerOne.getTranslateX()+5);
+        }else if(playerOne.getTranslateX()>4600){
+            playerOne.setTranslateX(playerOne.getTranslateX()-5);
+        }
+        if (playerOne.getTranslateY()<-400){
+            playerOne.setTranslateY(playerOne.getTranslateY()+5);
+        }else if(playerOne.getTranslateY()>2300){
+            playerOne.setTranslateY(playerOne.getTranslateY()-5);
+        }
+    }
+
+    private void Shoot(){
         scene.setOnKeyPressed(events -> {
             KeyCode keyCode = events.getCode();
+            if (keyCode == KeyCode.Z ){
+                bullet = new Circle(5, Color.BLACK);
+                bullet.setTranslateX(playerOne.getTranslateX()+390);
+                bullet.setTranslateY(playerOne.getTranslateY()+290);
+                xVelocityB = speed * Math.cos(theta);
+                yVelocityB = speed * Math.sin(theta);
+                anchorPaneMain.getChildren().add(bullet);
+                canShoot = false;
+            }else if(keyCode == KeyCode.X && canShoot){
+                xVelocityB = speed * Math.cos(theta);
+                yVelocityB = speed * Math.sin(theta);
+                bullet = new Circle(5, Color.BLACK);
+                anchorPaneMain.getChildren().add(bullet);
+                canShoot = false;
+            }
 
-            if (keyCode == KeyCode.UP || keyCode == KeyCode.W && !MoveUp) {
-                MoveUp = true;
-                playerOne.rotateProperty().set(0);
-            } else if (keyCode == KeyCode.DOWN || keyCode == KeyCode.S && !MoveDown) {
-                MoveDown = true;
-                playerOne.rotateProperty().set(180);
-            }
-            if (keyCode == KeyCode.LEFT || keyCode == KeyCode.A && !MoveLeft) {
-                MoveLeft = true;
-            } else if (keyCode == KeyCode.RIGHT || keyCode == KeyCode.D && !MoveRight) {
-                MoveRight = true;
-            }
         });
         scene.setOnKeyReleased(events -> {
             KeyCode keyCode = events.getCode();
+            if (keyCode == KeyCode.Z){
 
-            if (keyCode == KeyCode.UP || keyCode == KeyCode.W) {
-                MoveUp = false;
-            } else if (keyCode == KeyCode.DOWN || keyCode == KeyCode.S) {
-                MoveDown = false;
-            }
-            if (keyCode == KeyCode.LEFT || keyCode == KeyCode.A) {
-                MoveLeft = false;
-            } else if (keyCode == KeyCode.RIGHT || keyCode == KeyCode.D) {
-                MoveRight = false;
+            }else if(keyCode == KeyCode.X){
+
             }
         });
-        if (MoveUp){
-            playerOne.setTranslateY(playerOne.getTranslateY()-10);
-            playerOne.rotateProperty().set(0);
-        }else if (MoveDown){
-            playerOne.setTranslateY(playerOne.getTranslateY()+10);
-            playerOne.rotateProperty().set(180);
-        }
-        if (MoveLeft){
-            playerOne.setTranslateX(playerOne.getTranslateX()-10);
-            playerOne.rotateProperty().set(270);
-        }else if (MoveRight){
-            playerOne.setTranslateX(playerOne.getTranslateX()+10);
-            playerOne.rotateProperty().set(90);
-        }
-        if (MoveRight && MoveDown){
-            playerOne.rotateProperty().set(135);
-        }else if(MoveRight && MoveUp){
-            playerOne.rotateProperty().set(45);
-        }else if (MoveLeft && MoveDown){
-            playerOne.rotateProperty().set(225);
-        }else if (MoveLeft && MoveUp){
-            playerOne.rotateProperty().set(315);
+        if (!canShoot){
+            //bullet.setTranslateX(bullet.getTranslateX()+ xVelocityB);
+            //bullet.setTranslateY(bullet.getTranslateX()+ yVelocityB);
+
         }
     }
 
