@@ -34,12 +34,13 @@ public class PlayerBoat extends Polygon {
     public void reduceHealth(Double damagedone){
         health -= damagedone;
         if(isDead()){
+            health = 0.0;
             destroyobject();
         }
     }
 
     public void destroyobject(){
-        //destroy
+
     }
 
 }
